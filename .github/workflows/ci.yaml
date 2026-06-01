@@ -1,12 +1,12 @@
-name: CI Pipeline
+name: Continous Integration - {Juan Carlos Vilar}
 
 on:
   pull_request:
     branches:
       - main
 
-jobs:
-  build-and-test:
+jobs: 
+  test_and_format:
     runs-on: ubuntu-latest
     permissions:
       contents: write  # Ensure the workflow has permission to push commits
@@ -32,7 +32,7 @@ jobs:
 
       - name: Run tests
         run: |
-          pytest session4/tests/
+          pytest session4/exercise/tests
 
       - name: Format Python code with black
         run: |
