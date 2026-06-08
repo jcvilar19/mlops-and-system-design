@@ -9,11 +9,12 @@ import mlflow
 from mlflow.models import infer_signature
 import os
 
+
 class ClassSuportTransformer:
     def __init__(self):
         self.DROP_COLUMNS = ["RowNumber", "CustomerId", "Surname"]
         self.BINARY_FEATURES = ["Gender"]
-        self.ONE_HOT_ENCODE_COLUMNS = ['Geography']
+        self.ONE_HOT_ENCODE_COLUMNS = ["Geography"]
 
     def transform_class_support(self, df: pd.DataFrame) -> pd.DataFrame:
         df = self._drop_columns(df)
@@ -24,20 +25,22 @@ class ClassSuportTransformer:
 
     def _drop_columns(self, df: pd.DataFrame) -> pd.DataFrame:
         return df.drop(self.DROP_COLUMNS, axis=1)
-    
+
     def _map_binary_variables(self, df: pd.DataFrame) -> pd.DataFrame:
         for col in self.BINARY_FEATURES:
-            df[col] = df[col].map({"Female": 1, "Male": 0})        
+            df[col] = df[col].map({"Female": 1, "Male": 0})
         return df
-    
+
     def _one_hot_encoding(self, df: pd.DataFrame) -> pd.DataFrame:
-        encoder_path = 'encoder.pkl'
+        encoder_path = "encoder.pkl"
         encoder_exists = os.path.exists(encoder_path)
 
         if encoder_exists:
             encoder = self._load_encoder()
         else:
-            encoder = OneHotEncoder(drop='first', sparse_output=False).set_output(transform="pandas")
+            encoder = OneHotEncoder(drop="first", sparse_output=False).set_output(
+                transform="pandas"
+            )
             encoder.fit(df[self.ONE_HOT_ENCODE_COLUMNS])
             self._save_encoder(encoder)
 
@@ -48,16 +51,15 @@ class ClassSuportTransformer:
         return df
 
     def _save_encoder(self, encoder) -> None:
-        joblib.dump(encoder, 'encoder.pkl')
+        joblib.dump(encoder, "encoder.pkl")
 
     def _load_encoder(self):
-        return joblib.load('encoder.pkl')
-
+        return joblib.load("encoder.pkl")
 
     def balance_dataset(self, df: pd.DataFrame) -> pd.DataFrame:
         # Separate the classes
-        df_y0 = df[df['Exited'] == 0].copy()
-        df_y1 = df[df['Exited'] == 1].copy()
+        df_y0 = df[df["Exited"] == 0].copy()
+        df_y1 = df[df["Exited"] == 1].copy()
 
         # Find the smaller class size
         min_size = len(df_y1)
@@ -74,7 +76,6 @@ class ClassSuportTransformer:
         return df_balanced
 
 
-
 @dataclass
 class MLFlowInputVariables:
     model: object
@@ -82,36 +83,32 @@ class MLFlowInputVariables:
     params: object
     train_data: object
 
+
 class Model:
     def __init__(self):
         self.model_params = {
             "max_depth": 10,
             "min_samples_split": 4,
             "min_samples_leaf": 2,
-            "max_features":'sqrt',
-            "random_state": 42
+            "max_features": "sqrt",
+            "random_state": 42,
         }
 
     def train_model(self, df: pd.DataFrame) -> MLFlowInputVariables:
         X_train, X_test, y_train, y_test = train_test_split(
-            df.drop('Exited', axis=1),
-            df['Exited'],
-            test_size=0.2,
-            random_state=42)
+            df.drop("Exited", axis=1), df["Exited"], test_size=0.2, random_state=42
+        )
         model = DecisionTreeClassifier(**self.model_params)
         model.fit(X_train, y_train)
         accuracy = self._get_score(model, X_test, y_test)
         return MLFlowInputVariables(
-            model=model,
-            metric=accuracy,
-            params=self.model_params,
-            train_data=X_train
+            model=model, metric=accuracy, params=self.model_params, train_data=X_train
         )
-    
+
     def _get_score(self, model, X_test, y_test):
         y_pred = model.predict(X_test)
         return accuracy_score(y_test, y_pred)
-    
+
 
 class MLFlowRunExecution:
     def __init__(self):
@@ -131,8 +128,8 @@ class MLFlowRunExecution:
 
             # Infer the model signature
             signature = infer_signature(
-                input.train_data,
-                input.model.predict(input.train_data))
+                input.train_data, input.model.predict(input.train_data)
+            )
 
             # Log the model
             model_info = mlflow.sklearn.log_model(

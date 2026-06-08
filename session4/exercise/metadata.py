@@ -17,4 +17,3 @@ MODEL_PARAMS = {
     "multi_class": "auto",
     "random_state": 8888,
 }
-
